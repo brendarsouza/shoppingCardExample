@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CartService, Product } from '../services/cart.service';
 import { ModalController } from '@ionic/angular';
 import { BehaviorSubject } from 'rxjs';
+import { CartModalPage } from '../pages/cart-modal/cart-modal.page';
 
 @Component({
   selector: 'app-home',
@@ -9,9 +10,11 @@ import { BehaviorSubject } from 'rxjs';
   styleUrls: ['home.page.scss'],
 })
 export class HomePage implements OnInit {
-  cart = [];
-  products = [] as Product[];
+  cart: Product[] = [];
+  products: Product[] = [];
   cartItemCount: BehaviorSubject<number> = {} as BehaviorSubject<number>;
+
+  @ViewChild('cart', {static: false, read: ElementRef })fab: ElementRef = {} as ElementRef;
 
   constructor(private cartService: CartService, private modalCtrl: ModalController) {}
 
@@ -21,11 +24,35 @@ export class HomePage implements OnInit {
     this.cartItemCount = this.cartService.getCartItemCount();
   }
 
-  addToCart(product) {
-
+  addToCart(product: any) {
+    this.animateCSS('tada');
+    this.cartService.addProduct(product);
   }
 
-  openCart() {
+  async openCart() {
+    this.animateCSS('bounceOutLeft', true);
+    let modal = await this.modalCtrl.create({
+      component: CartModalPage,
+      cssClass: 'cart-modal'
+    });
+    modal.onWillDismiss().then(() => {
+      this.fab.nativeElement.classList.remove('animated', 'bounceOutLeft');
+      this.animateCSS('bounceInLeft');
+    })
+    modal.present();
+  }
 
+  animateCSS(animationName: any, keepAnimated = false) {
+    const node = this.fab.nativeElement;
+    node.classList.add('animated', animationName)
+
+    //https://github.com/daneden/animate.css
+    function handleAnimationEnd() {
+      if (!keepAnimated) {
+        node.classList.remove('animated', animationName);
+      }
+      node.removeEventListener('animationend', handleAnimationEnd)
+    }
+    node.addEventListener('animationend', handleAnimationEnd)
   }
 }
